@@ -18,35 +18,35 @@ import json
 
 currentRevision = None
 
-def pull():
+def pull(config):
 	print("PULL REQUEST")
-	metadata = DropboxDownload(client, tarball, cloud_path)
+	metadata = DropboxDownload(client, config["local"]["tarball"], os.path.join(config["cloud"]["path"],config["cloud"]["tarball"]),)
 	global currentRevision
 	currentRevision = metadata["rev"]
-	extract(tarball)
+	extract(config["local"]["tarball"])
 
-	git = sh.git.bake(_cwd=localrepo_path)
-	print(git.pull(tempfolder, "master"))
+	git = sh.git.bake(_cwd=config["local"]["path"])
+	print(git.pull(os.path.join(config["local"]["temp"],"mycode"), "master"))
 
 
-def push():
+def push(config):
     print("PUSH REQUEST")
-    pull()
-    make_tarfile(tarball, localrepo_path)
-    metadata = DropboxUpload(client, tarball, cloud_path, revision=currentRevision)
+    pull(config)
+    make_tarfile(config["local"]["tarball"], config["local"]["path"])
+    metadata = DropboxUpload(client, config["local"]["tarball"], os.path.join(config["cloud"]["path"],config["cloud"]["tarball"]), revision=currentRevision)
     print(metadata)
-    if(metadata['path'] == cloud_path):
+    if(metadata['path'] == os.path.join(config["cloud"]["path"],config["cloud"]["tarball"])):
         print("SUCCESS")
     else:
         print("RETRYING")
         time.sleep(10)
-        push();
+        push(config);
 #myrepo = Repo(localrepo_path)
 
 def initialize():
     local_dir=os.getcwd()
     cloud_path=input('Please enter the dropbox path to use: ')
-    cloud_archive_name= os.path.split(os.getcwd())[1] + "tar.gz"
+    cloud_archive_name= os.path.split(os.getcwd())[1] + ".tar.gz"
     configdata={
             "APP":{
                 "key":"zmuktk74z6ansu7",
@@ -61,9 +61,9 @@ def initialize():
                 "secret":"9c7vwi5kgmcbo6i"
             },
             "local":{
-                "repo":local_dir,
-                "tarball":"temp.tar.gz",
-                "temp":"temp",
+                "path":local_dir,
+                "tarball": cloud_archive_name,
+                "temp":"temp"
             },
             "cloud":{
                 "path" : cloud_path,
@@ -93,11 +93,11 @@ client = DropboxConnect(config)
 print(config)
 
 if(args.pull):
-	pull()
+	pull(config)
 if(args.push):
-	push()
+	push(config)
 
 
-if(os.path.exists("temp")):
-    shutil.rmtree('temp')
-    os.remove(tarball)
+if(os.path.exists(config["local"]["temp"])):
+    shutil.rmtree(config["local"]["temp"])
+    os.remove(config["local"]["tarball"])
