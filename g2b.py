@@ -3,7 +3,7 @@
 import dropbox
 import os.path
 import time
-from db_interface import DropboxConnect, DropboxUpload, DropboxDownload
+from db_interface import DropboxConnect, DropboxUpload, DropboxDownload, DropboxAuth
 from tar_interface import make_tarfile, extract
 import tarfile
 import argparse
@@ -12,16 +12,11 @@ import shutil
 import hashlib
 import json
 # Get your app key and secret from the Dropbox developer website
-app_key = 'zmuktk74z6ansu7'
-app_secret = '9c7vwi5kgmcbo6i'
-
-
 
 #connect to dropbox -- app validation etc
-client = DropboxConnect(app_key, app_secret)
+
 
 currentRevision = None
-
 
 def pull():
 	print("PULL REQUEST")
@@ -49,15 +44,22 @@ def push():
 #myrepo = Repo(localrepo_path)
 
 def initialize():
-    local_dir=input('Please kind Fucker, give the local repository directory: ')
-    while  not (os.path.isdir(local_dir)):
-        local_dir=input('Dont fuck with me matey, write again')
-
-    cloud_path=input('Please kind Fucker, give the cloud path')
-    cloud_archive_name=input('Please kind Fucker, give the cloud tar.fz name')
-
-
+    local_dir=os.getcwd()
+    cloud_path=input('Please enter the dropbox path to use: ')
+    cloud_archive_name= os.path.split(os.getcwd())[1] + "tar.gz"
     configdata={
+            "APP":{
+                "key":"zmuktk74z6ansu7",
+                "secret":"9c7vwi5kgmcbo6i"
+            }
+    }
+    mytoken = DropboxAuth(configdata)
+    configdata={
+            "APP":{
+                "token": mytoken,
+                "key":"zmuktk74z6ansu7",
+                "secret":"9c7vwi5kgmcbo6i"
+            },
             "local":{
                 "repo":local_dir,
                 "tarball":"temp.tar.gz",
@@ -85,13 +87,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--pull", action="store_true")
 parser.add_argument("--push", action="store_true")
 args = parser.parse_args()
+
+config = configure()
+client = DropboxConnect(config)
+print(config)
+
 if(args.pull):
 	pull()
 if(args.push):
 	push()
 
-config = configure()
-print (config)
+
 if(os.path.exists("temp")):
     shutil.rmtree('temp')
     os.remove(tarball)

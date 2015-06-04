@@ -1,29 +1,28 @@
 import dropbox
 import os.path
 
-def DropboxConnect(app_key, app_secret):
-	if(not os.path.isfile("password")):
-		flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
-
-		# Have the user sign in and authorize this token
-		authorize_url = flow.start()
-		print ('1. Go to: ' + authorize_url)
-		print ('2. Click "Allow" (you might have to log in first)')
-		print ('3. Copy the authorization code.')
-		code = input("Enter the authorization code here: ").strip()
-
-		# This will fail if the user enters an invalid authorization code
-		access_token, user_id = flow.finish(code)
-
-
-		pswdf  = open("password", "w")
-		pswdf.write(access_token)
-	else:
-		pswdf = open("password", "r")
-		access_token = pswdf.read()
-
-	client = dropbox.client.DropboxClient(access_token)
+def DropboxConnect(config):
+	client = dropbox.client.DropboxClient(config["APP"]["token"])
 	return client
+
+def DropboxAuth(config):
+    if("token" in config["APP"].keys()):
+        access_token = config["APP"]["token"]
+    else:
+        access_token = None
+    if(access_token == None):
+		    flow = dropbox.client.DropboxOAuth2FlowNoRedirect(config["APP"]["key"], config["APP"]["secret"])
+
+		    # Have the user sign in and authorize this token
+		    authorize_url = flow.start()
+		    print ('1. Go to: ' + authorize_url)
+		    print ('2. Click "Allow" (you might have to log in first)')
+		    print ('3. Copy the authorization code.')
+		    code = input("Enter the authorization code here: ").strip()
+
+		    # This will fail if the user enters an invalid authorization code
+		    access_token, user_id = flow.finish(code)
+    return access_token
 
 def DropboxUpload(client, rfile, path, revision=None):
 	f = open(rfile, "rb")
