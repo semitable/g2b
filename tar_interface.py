@@ -4,6 +4,6 @@ def make_tarfile(output_filename, source_dir):
     with tarfile.open(output_filename, "w:gz") as tar:
         tar.add(source_dir, arcname=os.path.basename(source_dir))
 
-def extract (file):
+def extract (file, location):
 	tar = tarfile.open(file)
-	tar.extractall("temp")
+	tar.extractall(location)

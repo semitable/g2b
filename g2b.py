@@ -7,10 +7,12 @@ from db_interface import DropboxConnect, DropboxUpload, DropboxDownload, Dropbox
 from tar_interface import make_tarfile, extract
 import tarfile
 import argparse
-import sh
 import shutil
+import sh
 import hashlib
 import json
+import git
+#from git import Repo
 # Get your app key and secret from the Dropbox developer website
 
 #connect to dropbox -- app validation etc
@@ -19,14 +21,23 @@ import json
 currentRevision = None
 
 def pull(config):
-	print("PULL REQUEST")
-	metadata = DropboxDownload(client, config["local"]["tarball"], os.path.join(config["cloud"]["path"],config["cloud"]["tarball"]),)
-	global currentRevision
-	currentRevision = metadata["rev"]
-	extract(config["local"]["tarball"])
+    print("PULL REQUEST")
+    tempdir = os.path.join(config["local"]["temp"], config['local']['basename'])
+    metadata = DropboxDownload(client, config["local"]["tarball"], os.path.join(config["cloud"]["path"],config["cloud"]["tarball"]),)
+    global currentRevision
+    currentRevision = metadata["rev"]
+    extract(config["local"]["tarball"], config["local"]["temp"])
+    #
+    # git = sh.git.bake(_cwd=config["local"]["path"])
+    # print(git.pull(os.path.join(config["local"]["temp"],"mycode"), "master"))
 
-	git = sh.git.bake(_cwd=config["local"]["path"])
-	print(git.pull(os.path.join(config["local"]["temp"],"mycode"), "master"))
+    g = git.cmd.Git(config["local"]["path"])
+    g.pull("temp/mycode")
+
+
+
+
+
 
 
 def push(config):
@@ -41,7 +52,7 @@ def push(config):
         print("RETRYING")
         time.sleep(10)
         push(config);
-#myrepo = Repo(localrepo_path)
+
 
 def initialize():
     local_dir=os.getcwd()
@@ -61,6 +72,7 @@ def initialize():
                 "secret":"9c7vwi5kgmcbo6i"
             },
             "local":{
+                "basename":os.path.split(os.getcwd())[1],
                 "path":local_dir,
                 "tarball": cloud_archive_name,
                 "temp":"temp"
@@ -83,21 +95,26 @@ def configure():
     finally:
         return configdata
 
+def clean(config):
+    if(os.path.exists(config["local"]["temp"])):
+        shutil.rmtree(config["local"]["temp"])
+        os.remove(config["local"]["tarball"])
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--pull", action="store_true")
 parser.add_argument("--push", action="store_true")
 args = parser.parse_args()
 
 config = configure()
+clean(config)
 client = DropboxConnect(config)
 print(config)
 
 if(args.pull):
-	pull(config)
+    pull(config)
 if(args.push):
-	push(config)
+    push(config)
+clean(config)
 
 
-if(os.path.exists(config["local"]["temp"])):
-    shutil.rmtree(config["local"]["temp"])
-    os.remove(config["local"]["tarball"])
+
