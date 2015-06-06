@@ -92,9 +92,10 @@ def putgently():
     returnpath = metadata['path']
     if(returnpath != CloudPath):
         print("There was a conflict while uploading to Dropbox.")
-        print("Possibly another used was pushing at the same time.")
+        print("Possibly another user was pushing at the same time.")
         print("Retrying in a few seconds...")
         client.file_delete(returnpath)
+        clean()
         time.sleep(randint(5,10))
         push()
 
