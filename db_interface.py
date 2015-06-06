@@ -30,6 +30,10 @@ def DropboxAuth(app_key, app_secret):
 def DropboxUpload(client, rfile, path, revision=None):
     f = open(rfile, "rb")
     return client.put_file(path, f, revision)
+    
+def DropboxForcedUpload(client, rfile, path):
+    f = open(rfile, "rb")
+    return client.put_file(path, f, overwrite=True)
 
 def DropboxDownload(client, wfile, cloudpath):
     f, metadata = client.get_file_and_metadata(cloudpath)

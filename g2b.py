@@ -6,8 +6,8 @@ import sys
 import argparse
 import git
 import shutil
-from db_interface import DropboxAuth, DropboxClient, DropboxDownload, DropboxUpload
-#def extract (file, location):
+
+from db_interface import DropboxAuth, DropboxClient, DropboxDownload, DropboxUpload, DropboxForcedUpload
 from tar_interface import extract, make_tarfile
  
 appkey  = "zmuktk74z6ansu7"
@@ -19,34 +19,63 @@ extractionDir = LocalRepo + "/extract"
 tempTar = LocalRepo + "/temp.tar.gz"
 CloudPath = "/project/mycode.tar.gz"
 client = None
+Revision = None
+
+
+def destroyCloud():
+    try:
+        client.file_delete(CloudPath)
+    except dropbox.rest.ErrorResponse as e:
+        print("No repository found in dropbox. Could not destroy")
 
 
 def clean():
-    shutil.rmtree(extractionDir)
-    shutil.rmtree(tempDir)
+    if(os.path.exists(extractionDir)):
+        shutil.rmtree(extractionDir)
+    if(os.path.exists(tempDir)):
+        shutil.rmtree(tempDir)
+    if(os.path.exists(tempTar)):
+        os.remove(tempTar)
 def pull():
     try:
         metadata = DropboxDownload(client, tempTar, CloudPath)
     except dropbox.rest.ErrorResponse as e:
         print("No repository in dropbox")
-        raise e
     else:
         print("Dropbox Repository Found. Pulling..")
-        if not os.path.exists(tempDir):
-            os.makedirs(tempDir)
+        global Revision
+        print(metadata)
+        Revision = metadata['rev']
+        #pulling from directory "extracted" to the local
         if not os.path.exists(extractionDir):
             os.makedirs(extractionDir)
         extract(tempTar, extractionDir)
-        git.Git().pull(extractionDir + "/mycode")
+        print(git.Git().pull(extractionDir + "/mycode"))
         
 
-        
-    
-def push():
+
+def put():
+    if not os.path.exists(tempDir):
+        os.makedirs(tempDir)
+
     os.chdir(tempDir)
-    extract(tempTar, extractionDir)
-    git.Git().clone(extractionDir+ "/mycode")
+    git.Git().clone(LocalRepo)
+    make_tarfile(tempTar, tempDir+"/mycode")
 
+    DropboxForcedUpload(client, tempTar, CloudPath)
+
+def putgently():
+    if not os.path.exists(tempDir):
+        os.makedirs(tempDir)
+
+    os.chdir(tempDir)
+    git.Git().clone(LocalRepo)
+    make_tarfile(tempTar, tempDir+"/mycode")
+    DropboxUpload(client, tempTar, CloudPath, revision=Revision)
+
+def push():
+    pull()
+    putgently()
 
 
 
@@ -63,18 +92,24 @@ def main(arguments):
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--push', action='store_true')
     group.add_argument('--pull', action='store_true')
+    group.add_argument('--put', action='store_true')
+    group.add_argument('--destroy', action='store_true')
  
     args = parser.parse_args(arguments)
     
     global client
     client = connect()
 
-
+    clean()
     if(args.push == True):
         push()
     if(args.pull == True):
         pull()
-    
+    if(args.put == True):
+        put()
+    if(args.destroy):
+        destroyCloud()
+    clean()
  
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
