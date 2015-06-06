@@ -61,6 +61,8 @@ def clone():
 def pull():
     CloudPath = config['cloud']['archive']
     tempTar = config['temp']['tarball']
+    if not os.path.exists(config['temp']['folder']):
+            os.makedirs(config['temp']['folder'])
     extractionDir = config['temp']['extract']
     try:
         metadata = DropboxDownload(client, tempTar, CloudPath)
@@ -122,6 +124,7 @@ def putgently():
 def push():
     pull()
     putgently()
+    print("Push succesfull")
 
 
 
