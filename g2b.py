@@ -6,7 +6,8 @@ import sys
 import argparse
 import git
 import shutil
-
+import time
+from random import randint
 from db_interface import DropboxAuth, DropboxClient, DropboxDownload, DropboxUpload, DropboxForcedUpload
 from tar_interface import extract, make_tarfile
  
@@ -88,7 +89,15 @@ def putgently():
     git.Git().clone(LocalRepo)
     make_tarfile(tempTar, tempDir+"/mycode")
     metadata = DropboxUpload(client, tempTar, CloudPath, revision=Revision)
-    print(metadata)
+    returnpath = metadata['path']
+    if(returnpath != CloudPath):
+        print("There was a conflict while uploading to Dropbox.")
+        print("Possibly another used was pushing at the same time.")
+        print("Retrying in a few seconds...")
+        client.file_delete(returnpath)
+        time.sleep(randint(5,10))
+        push()
+
 
 def push():
     pull()
