@@ -36,6 +36,18 @@ def clean():
         shutil.rmtree(tempDir)
     if(os.path.exists(tempTar)):
         os.remove(tempTar)
+
+
+
+def clone():
+    try:
+        metadata = DropboxDownload(client, tempTar, CloudPath)
+    except dropbox.rest.ErrorResponse as e:
+        print("No repository in dropbox")
+    extract(tempTar, LocalRepo)
+
+
+
 def pull():
     try:
         metadata = DropboxDownload(client, tempTar, CloudPath)
@@ -94,6 +106,7 @@ def main(arguments):
     group.add_argument('--pull', action='store_true')
     group.add_argument('--put', action='store_true')
     group.add_argument('--destroy', action='store_true')
+    group.add_argument('--clone', action='store_true')
  
     args = parser.parse_args(arguments)
     
@@ -101,14 +114,16 @@ def main(arguments):
     client = connect()
 
     clean()
-    if(args.push == True):
+    if(args.push):
         push()
-    if(args.pull == True):
+    if(args.pull):
         pull()
-    if(args.put == True):
+    if(args.put):
         put()
     if(args.destroy):
         destroyCloud()
+    if(args.clone):
+        clone()
     clean()
  
 if __name__ == '__main__':
