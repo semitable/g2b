@@ -56,13 +56,17 @@ def pull():
     else:
         print("Dropbox Repository Found. Pulling..")
         global Revision
-        print(metadata)
         Revision = metadata['rev']
         #pulling from directory "extracted" to the local
         if not os.path.exists(extractionDir):
             os.makedirs(extractionDir)
         extract(tempTar, extractionDir)
-        print(git.Git().pull(extractionDir + "/mycode"))
+        
+        try:
+            print(git.Git().pull(extractionDir + "/mycode"))
+        except:
+            print("Auto-merging failed. Please merge the files manually, commit and then push again")
+
         
 
 
@@ -83,7 +87,8 @@ def putgently():
     os.chdir(tempDir)
     git.Git().clone(LocalRepo)
     make_tarfile(tempTar, tempDir+"/mycode")
-    DropboxUpload(client, tempTar, CloudPath, revision=Revision)
+    metadata = DropboxUpload(client, tempTar, CloudPath, revision=Revision)
+    print(metadata)
 
 def push():
     pull()
